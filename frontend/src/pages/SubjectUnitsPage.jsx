@@ -18,28 +18,34 @@ export const SubjectUnitsPage = ({ subjectCode, onBack, onOpenUnit }) => {
   const studentClassName = currentUser?.className || 'Class 1';
 
   useEffect(() => {
+    let isMounted = true;
     const loadUnits = async () => {
       setLoading(true);
-      const subjects = await api.getSubjects();
-      const currentSubj = subjects.find(s => s.code === subjectCode) || subjects[0];
-      setSubject(currentSubj);
+      try {
+        const subjects = await api.getSubjects();
+        const currentSubj = subjects.find(s => s.code === subjectCode) || subjects[0];
+        if (isMounted) setSubject(currentSubj);
 
-      const uList = await api.getUnits(studentClassId, currentSubj.code);
-      setUnits(uList);
+        const uList = await api.getUnits(studentClassId, currentSubj.code);
+        if (isMounted) setUnits(uList || []);
 
-      const prog = await api.getStudentSubjectProgress(currentUser?.id, studentClassId, currentSubj.code);
-      setProgress(prog);
+        const prog = await api.getStudentSubjectProgress(currentUser?.id, studentClassId, currentSubj.code);
+        if (isMounted) setProgress(prog || { completedUnits: [], completedCount: 0, progressPercentage: 0 });
 
-      const bList = await api.getStudentBadges(currentUser?.id, studentClassId, currentSubj.code);
-      setBadges(bList);
+        const bList = await api.getStudentBadges(currentUser?.id, studentClassId, currentSubj.code);
+        if (isMounted) setBadges(bList || []);
 
-      const attList = await api.getUnitAttempts(currentUser?.id);
-      setAttempts(attList);
-
-      setLoading(false);
+        const attList = (await api.getUnitAttempts?.(currentUser?.id)) || [];
+        if (isMounted) setAttempts(attList);
+      } catch (err) {
+        console.error('Error loading subject units:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     };
 
     loadUnits();
+    return () => { isMounted = false; };
   }, [subjectCode, studentClassId, currentUser]);
 
   if (loading) {

@@ -16,22 +16,28 @@ export const QuizzesPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       setLoading(true);
-      const subjs = await api.getSubjects();
-      setSubjects(subjs);
+      try {
+        const subjs = await api.getSubjects();
+        if (isMounted) setSubjects(subjs);
 
-      const classId = currentUser?.classId || 'c5';
-      const qList = await api.getQuizzes(classId, selectedSubject);
-      setQuizzes(qList);
+        const classId = currentUser?.classId || 'c5';
+        const qList = (await api.getQuizzes?.(classId, selectedSubject)) || [];
+        if (isMounted) setQuizzes(qList);
 
-      const attList = await api.getStudentBadges ? (await api.submitQuiz ? (JSON.parse(localStorage.getItem('dlp_quiz_attempts_v1') || '[]')) : []) : [];
-      setAttempts(attList.filter(a => a.studentId === currentUser?.id));
-
-      setLoading(false);
+        const attList = (await api.getUnitAttempts?.(currentUser?.id)) || [];
+        if (isMounted) setAttempts(attList.filter(a => a.studentId === currentUser?.id));
+      } catch (e) {
+        console.error('Failed to load quizzes:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     };
 
     fetchData();
+    return () => { isMounted = false; };
   }, [selectedSubject, currentUser]);
 
   if (activeQuizId) {

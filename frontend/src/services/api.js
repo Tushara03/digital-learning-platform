@@ -120,7 +120,7 @@ export const api = {
     return storage.getSubjects();
   },
 
-  // Units & Curriculum
+  // Units & Curriculum (25 units per subject, 7 classes x 8 subjects = 1400 units)
   getUnits: async (classId, subjectCode) => {
     return storage.getAllUnitsByClassAndSubject(classId, subjectCode);
   },
@@ -132,6 +132,46 @@ export const api = {
   saveUnit: async (unitData) => {
     storage.saveUnit(unitData);
     return { success: true };
+  },
+
+  getUnitAttempts: async (studentId, unitId) => {
+    return storage.getUnitAttempts(studentId, unitId);
+  },
+
+  // Quizzes Management
+  getQuizzes: async (classId, subjectCode) => {
+    const units = storage.getAllUnitsByClassAndSubject(classId, subjectCode);
+    return units.map(u => ({
+      id: u.unitId,
+      unitId: u.unitId,
+      title: `${u.title} - Quiz`,
+      classId: u.classId,
+      subjectCode: u.subjectCode,
+      questions: u.questions || [],
+      durationMinutes: u.durationMinutes || 10,
+      passingScore: 60,
+      description: u.description
+    }));
+  },
+
+  getQuizById: async (quizId) => {
+    const unit = storage.getUnitById(quizId);
+    if (!unit) return null;
+    return {
+      id: unit.unitId,
+      unitId: unit.unitId,
+      title: `${unit.title} - Quiz`,
+      classId: unit.classId,
+      subjectCode: unit.subjectCode,
+      questions: unit.questions || [],
+      durationMinutes: unit.durationMinutes || 10,
+      passingScore: 60,
+      description: unit.description
+    };
+  },
+
+  submitQuiz: async (quizId, studentId, answers) => {
+    return api.submitUnitQuiz(quizId, studentId, answers);
   },
 
   // Unit Quiz Submission
@@ -153,39 +193,63 @@ export const api = {
     const result = {
       unitId,
       studentId,
+      classId: unit.classId,
+      subjectCode: unit.subjectCode,
+      unitNumber: unit.unitNumber,
       score,
+      percentage: score,
       correctCount,
       totalQuestions: questions.length,
       passed,
       completedAt: new Date().toISOString()
     };
 
-    storage.saveQuizAttempt(result);
+    storage.saveUnitAttempt(result);
     return { success: true, result };
   },
 
   // Homework
   getHomeworkList: async (classId) => {
-    return storage.getHomeworkByClass(classId);
+    return storage.getHomework(classId);
   },
 
   getHomeworkSubmissions: async (homeworkId) => {
-    return storage.getSubmissionsByHomework(homeworkId);
+    return storage.getSubmissions(homeworkId);
   },
 
   submitHomework: async (submissionData) => {
-    const sub = storage.submitHomework(submissionData);
-    return { success: true, submission: sub };
+    const subs = storage.getSubmissions();
+    const newSub = {
+      id: `sub_${Date.now()}`,
+      ...submissionData,
+      submittedAt: new Date().toISOString()
+    };
+    subs.push(newSub);
+    storage.saveSubmissions(subs);
+    return { success: true, submission: newSub };
   },
 
   gradeHomework: async (submissionId, gradeData) => {
-    const updated = storage.gradeSubmission(submissionId, gradeData);
-    return { success: true, submission: updated };
+    const subs = storage.getSubmissions();
+    const idx = subs.findIndex(s => s.id === submissionId);
+    if (idx !== -1) {
+      subs[idx] = { ...subs[idx], ...gradeData, gradedAt: new Date().toISOString() };
+      storage.saveSubmissions(subs);
+      return { success: true, submission: subs[idx] };
+    }
+    return { success: false, message: 'Submission not found' };
   },
 
   createHomework: async (hwData) => {
-    const created = storage.createHomework(hwData);
-    return { success: true, homework: created };
+    const hwList = storage.getHomework();
+    const newHw = {
+      id: `hw_${Date.now()}`,
+      ...hwData,
+      createdAt: new Date().toISOString()
+    };
+    hwList.unshift(newHw);
+    storage.saveHomework(hwList);
+    return { success: true, homework: newHw };
   },
 
   // AI Tutor Integration

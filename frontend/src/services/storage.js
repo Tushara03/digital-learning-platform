@@ -350,13 +350,15 @@ export const storage = {
   },
 
   getUnitById: (unitId) => {
-    // unitId format: u_c5_mathematics_3
-    const parts = unitId.split('_');
+    // unitId format: u_c5_mathematics_3 or quiz_c5_mathematics_3
+    if (!unitId) return null;
+    const cleanId = unitId.replace(/^quiz_/, 'u_');
+    const parts = cleanId.split('_');
     if (parts.length >= 4) {
       const classId = parts[1];
       const subjectCode = parts[2];
       const units = storage.getAllUnitsByClassAndSubject(classId, subjectCode);
-      return units.find(u => u.unitId === unitId) || null;
+      return units.find(u => u.unitId === cleanId || u.unitId === unitId) || null;
     }
     return null;
   },
