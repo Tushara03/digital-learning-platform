@@ -1,0 +1,17 @@
+# Node modules
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+
+# Composer vendor
+backend/vendor/
+
+# Backend env & secrets
+backend/.env
+backend/config/grok_secret.json
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

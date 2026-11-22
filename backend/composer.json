@@ -1,0 +1,30 @@
+{
+  "name": "rural-learn/digital-learning-platform-backend",
+  "description": "Premium Rural Digital Learning Platform Backend (Classes 1-7, 1400 Quizzes, MongoDB, PHP REST API)",
+  "type": "project",
+  "policy": {
+    "advisories": {
+      "block": false
+    }
+  },
+  "config": {
+    "audit": {
+      "block": false
+    },
+    "policy": {
+      "advisories": {
+        "block": false
+      }
+    }
+  },
+  "require": {
+    "php": ">=7.4 || >=8.0",
+    "mongodb/mongodb": "1.16.*",
+    "firebase/php-jwt": "^6.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": ""
+    }
+  }
+}
